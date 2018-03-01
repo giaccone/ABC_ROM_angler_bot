@@ -67,11 +67,14 @@ LatestABC = get_current_release()
 # ==========================
 def start(bot, update):
     url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
+    url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
+              'collective/rom-builders-collective-t2861778'
     msg = "*Welcome to ABC-ROM_angler bot*.\n\n"
     msg += "It will notify you when an update is available for angler\n\n"
     msg += "The current release is:\n"
     msg += "[" + LatestABC + "]({})\n\n".format(url_download)
-    msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
+    msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n\n'
+    msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
 
     bot.send_message(chat_id=update.message.chat_id,
                      text=msg,
@@ -116,15 +119,18 @@ def check4update(bot, job):
 
     if LatestABC != currentABC:
         LatestABC = currentABC
+        url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
+                  'collective/rom-builders-collective-t2861778'
 
         url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
         msg = "*New build for ABC-ROM_angler is available:*.\n\n"
         msg += "[" + LatestABC + "]({})\n\n".format(url_download)
         msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
+        msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
 
         users = np.loadtxt('./users/users_database.db').reshape(-1,)
-        cnt_not_found = 0
-        for single_user in users:
+        inactive_users = []
+        for index, single_user in enumerate(users):
             chat_id = int(single_user)
             # try to send the message
             try:
@@ -134,9 +140,12 @@ def check4update(bot, job):
 
             # if the user closed the bot, cacth exception and update cnt_not_sent
             except telegram.error.TelegramError:
-                cnt_not_found += 1
+                inactive_users.append(index)
 
-        print("{} users deactivated the bot\n".format(cnt_not_found))
+        users = np.delete(users, inactive_users)
+        np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
+
+        #print("{} users deactivated the bot\n".format(cnt_not_found))
 
 
 # =========================================
