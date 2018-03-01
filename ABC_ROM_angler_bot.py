@@ -27,19 +27,18 @@ LIST_OF_ADMINS = [int(adm) for adm in fid.readline().split()]
 fid.close()
 
 # ==========================
-# useful functions
-# ==========================
 # The following function reads the TOKEN from a file.
 # This file is not incuded in the github-repo for obvious reasons
+# ==========================
 def read_token(filename):
     with open(filename) as f:
         token = f.readline().replace('\n', '')
     return token
 
 
-# ==============================================
-# get current release lised in Kantjer web site
-# ==============================================
+# ==============================================================
+# functio to get current release released in Kantjer's web site
+# ==============================================================
 def get_current_release():
     # ABC ROM kantjer web site
     url = "http://kantjer.com/"
@@ -57,17 +56,21 @@ def get_current_release():
 
     return CurrentABC
 
+# ========================================================
+# assign a global variable inlcuding the latest release
+# ========================================================
+LatestABC = get_current_release()
+
 
 # ==========================
 # start - welcome message
 # ==========================
 def start(bot, update):
-    CurrentRelease = get_current_release()
-    url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + CurrentRelease
+    url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
     msg = "*Welcome to ABC-ROM_angler bot*.\n\n"
     msg += "It will notify you when an update is available for angler\n\n"
     msg += "The current release is:\n"
-    msg += "[" + CurrentRelease + "]({})\n\n".format(url_download)
+    msg += "[" + LatestABC + "]({})\n\n".format(url_download)
     msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
 
     bot.send_message(chat_id=update.message.chat_id,
@@ -103,6 +106,39 @@ def help(bot, update):
                      parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
 
 
+# =====================================================
+# check the current release and send message to users
+# if an update is fount
+# =====================================================
+def check4update(bot, job):
+    global LatestABC
+    currentABC = get_current_release()
+
+    if LatestABC != currentABC:
+        LatestABC = currentABC
+
+        url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
+        msg = "*New build for ABC-ROM_angler is available:*.\n\n"
+        msg += "[" + LatestABC + "]({})\n\n".format(url_download)
+        msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
+
+        users = np.loadtxt('./users/users_database.db').reshape(-1,)
+        cnt_not_found = 0
+        for single_user in users:
+            chat_id = int(single_user)
+            # try to send the message
+            try:
+                bot.send_message(chat_id=chat_id,
+                                 text=msg,
+                                 parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+            # if the user closed the bot, cacth exception and update cnt_not_sent
+            except telegram.error.TelegramError:
+                cnt_not_found += 1
+
+        print("{} users deactivated the bot\n".format(cnt_not_found))
+
+
 # =========================================
 # bot - main
 # =========================================
@@ -111,6 +147,8 @@ def main():
     fname = './admin_only/ABC_ROM_angler_bot_token.txt'
     updater = Updater(token=read_token(fname))
     dispatcher = updater.dispatcher
+    job_queue = updater.job_queue
+    job_c4u = job_queue.run_repeating(check4update, interval=900, first=60)
 
     # /start handler
     start_handler = CommandHandler('start', start)
