@@ -36,12 +36,39 @@ def read_token(filename):
         token = f.readline().replace('\n', '')
     return token
 
+
+# ==============================================
+# get current release lised in Kantjer web site
+# ==============================================
+def get_current_release():
+    # ABC ROM kantjer web site
+    url = "http://kantjer.com/"
+
+    # get content
+    webpage = requests.get(url)
+
+    # parse content
+    soup = BeautifulSoup(webpage.text, "lxml")
+
+    # get latest release
+    index1 = str(soup).find('ABC_ROM')
+    index2 = str(soup).find('.zip') + 4
+    CurrentABC = str(soup)[index1:index2]
+
+    return CurrentABC
+
+
 # ==========================
 # start - welcome message
 # ==========================
 def start(bot, update):
+    CurrentRelease = get_current_release()
+    url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + CurrentRelease
     msg = "*Welcome to ABC-ROM_angler bot*.\n\n"
-    msg += "It will notify you when an update is available for angler\n"
+    msg += "It will notify you when an update is available for angler\n\n"
+    msg += "The current release is:\n"
+    msg += "[" + CurrentRelease + "]({})\n\n".format(url_download)
+    msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
 
     bot.send_message(chat_id=update.message.chat_id,
                      text=msg,
