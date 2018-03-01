@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import numpy as np
+from functools import wraps
 
 # ==========================
 # python-temegam-bot modules
@@ -60,6 +61,21 @@ def get_current_release():
 # assign a global variable inlcuding the latest release
 # ========================================================
 LatestABC = get_current_release()
+
+
+# ==========================
+# restriction decorator
+# ==========================
+def restricted(func):
+    @wraps(func)
+    def wrapped(bot, update, *args, **kwargs):
+        user_id = update.effective_user.id
+        if user_id not in LIST_OF_ADMINS:
+            print("Unauthorized access denied for {}.".format(user_id))
+            bot.send_message(chat_id=update.message.chat_id, text="You are not authorized to run this command")
+            return
+        return func(bot, update, *args, **kwargs)
+    return wrapped
 
 
 # ==========================
@@ -155,6 +171,16 @@ def check4update(bot, job):
 
 
 # =========================================
+# restart - restart the BOT
+# =========================================
+@restricted
+def restart(bot, update):
+    bot.send_message(update.message.chat_id, "Bot is restarting...")
+    time.sleep(0.2)
+    os.execl(sys.executable, sys.executable, *sys.argv)
+
+
+# =========================================
 # bot - main
 # =========================================
 def main():
@@ -173,6 +199,9 @@ def main():
     # /help handler
     help_handler = CommandHandler('help', help)
     dispatcher.add_handler(help_handler)
+
+    # /r - restart the bot
+    dispatcher.add_handler(CommandHandler('r', restart))
 
     # start the BOT
     updater.start_polling()
