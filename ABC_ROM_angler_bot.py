@@ -37,7 +37,7 @@ def read_token(filename):
 
 
 # ==============================================================
-# functio to get current release released in Kantjer's web site
+# function to get current release released in Kantjer's web site
 # ==============================================================
 def get_current_release():
     # ABC ROM kantjer web site
@@ -114,11 +114,17 @@ def help(bot, update):
 # if an update is fount
 # =====================================================
 def check4update(bot, job):
+    # global variables
     global LatestABC
+    # current release
     currentABC = get_current_release()
 
+    # check for updates
     if LatestABC != currentABC:
+        # update latest release
         LatestABC = currentABC
+
+        # build message for users
         url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
                   'collective/rom-builders-collective-t2861778'
 
@@ -128,6 +134,7 @@ def check4update(bot, job):
         msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
         msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
 
+        # send message to all users (keeping track of the incative ones)
         users = np.loadtxt('./users/users_database.db').reshape(-1,)
         inactive_users = []
         for index, single_user in enumerate(users):
@@ -138,14 +145,13 @@ def check4update(bot, job):
                                  text=msg,
                                  parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
 
-            # if the user closed the bot, cacth exception and update cnt_not_sent
+            # if the user closed the bot, cacth exception and update inactive_users
             except telegram.error.TelegramError:
                 inactive_users.append(index)
 
+        # remove inactive_users and update database
         users = np.delete(users, inactive_users)
         np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
-
-        #print("{} users deactivated the bot\n".format(cnt_not_found))
 
 
 # =========================================
@@ -156,6 +162,7 @@ def main():
     fname = './admin_only/ABC_ROM_angler_bot_token.txt'
     updater = Updater(token=read_token(fname))
     dispatcher = updater.dispatcher
+    # set the time interval to check for updates (900 sec = 15 min)
     job_queue = updater.job_queue
     job_c4u = job_queue.run_repeating(check4update, interval=900, first=60)
 
