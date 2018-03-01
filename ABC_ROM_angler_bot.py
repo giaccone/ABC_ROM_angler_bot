@@ -5,6 +5,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import os
+import numpy as np
 
 # ==========================
 # python-temegam-bot modules
@@ -45,6 +46,21 @@ def start(bot, update):
     bot.send_message(chat_id=update.message.chat_id,
                      text=msg,
                      parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+    # add user to database for future communications
+    current_users = str(update.message.chat_id)
+
+    # merge it to the existing database and filter duplicates
+    if os.path.exists('./users/users_database.db'):
+        user_db = []
+        with open('./users/users_database.db', 'r') as fid:
+            for line in fid:
+                user_db.append(int(line))
+        user_db.append(int(current_users))
+        user_db = np.unique(user_db)
+        np.savetxt('./users/users_database.db', user_db, fmt="%s")
+    else:
+        np.savetxt('./users/users_database.db', [int(current_users)], fmt="%s")
 
 
 # ==========================
