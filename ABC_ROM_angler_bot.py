@@ -145,7 +145,7 @@ def check4update(bot, job):
                   'collective/rom-builders-collective-t2861778'
 
         url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
-        msg = "*New build for ABC-ROM_angler is available:*.\n\n"
+        msg = "*New build for ABC-ROM_angler is available:*\n\n"
         msg += "[" + LatestABC + "]({})\n\n".format(url_download)
         msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
         msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
