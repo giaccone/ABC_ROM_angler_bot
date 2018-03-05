@@ -165,6 +165,26 @@ def check4update(bot, job):
             except telegram.error.TelegramError:
                 inactive_users.append(index)
 
+        # summary
+        N_active = users.size - len(inactive_users)
+        N_inactive = len(inactive_users)
+
+        # send summary to admins
+        msg = '*Summary*:\n'
+        msg += '  \* active users notified: {:d}\n'.format(N_active)
+        msg += '  \* inactive users (removed): {:d}'.format(N_inactive)
+        for single_user in LIST_OF_ADMINS:
+            chat_id = int(single_user)
+            # try to send the message
+            try:
+                bot.send_message(chat_id=chat_id,
+                                 text=msg,
+                                 parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+            # if the admin closed the bot, cacth exception and do nothing
+            except telegram.error.TelegramError:
+                pass
+
         # remove inactive_users and update database
         users = np.delete(users, inactive_users)
         np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
