@@ -50,17 +50,21 @@ def get_current_release():
     # parse content
     soup = BeautifulSoup(webpage.text, "lxml")
 
-    # get latest release
-    index1 = str(soup).find('ABC_ROM')
-    index2 = str(soup).find('.zip') + 4
-    CurrentABC = str(soup)[index1:index2]
+    # get url
+    index0 = str(soup).find('Download')
+    index1 = str(soup).find('http://kantjer.com/wp-content/uploads', index0)
+    index2 = str(soup).find('.zip',index1) + 4
+    CurrentURL = str(soup)[index1:index2]
 
-    return CurrentABC
+    # get release name
+    CurrentABC = CurrentURL[CurrentURL.find('ABC_ROM'):]
+
+    return CurrentABC , CurrentURL
 
 # ========================================================
 # assign a global variable inlcuding the latest release
 # ========================================================
-LatestABC = get_current_release()
+LatestABC, LatestURL = get_current_release()
 
 
 # ==========================
@@ -82,13 +86,12 @@ def restricted(func):
 # start - welcome message
 # ==========================
 def start(bot, update):
-    url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
     url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
               'collective/rom-builders-collective-t2861778'
     msg = "*Welcome to ABC-ROM_angler bot*.\n\n"
     msg += "It will notify you when an update is available for angler\n\n"
     msg += "The current release is:\n"
-    msg += "[" + LatestABC + "]({})\n\n".format(url_download)
+    msg += "[" + LatestABC + "]({})\n\n".format(LatestURL)
     msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n\n'
     msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
 
@@ -133,7 +136,7 @@ def check4update(bot, job):
     # global variables
     global LatestABC
     # current release
-    currentABC = get_current_release()
+    currentABC, currentURL = get_current_release()
 
     # check for updates
     if LatestABC != currentABC:
@@ -144,9 +147,8 @@ def check4update(bot, job):
         url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
                   'collective/rom-builders-collective-t2861778'
 
-        url_download = 'http://kantjer.com/wp-content/uploads/2018/02/' + LatestABC
         msg = "*New build for ABC-ROM_angler is available:*\n\n"
-        msg += "[" + LatestABC + "]({})\n\n".format(url_download)
+        msg += "[" + LatestABC + "]({})\n\n".format(currentURL)
         msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
         msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
 
@@ -205,7 +207,7 @@ def restart(bot, update):
 # =========================================
 def main():
     # set TOKEN and initialization
-    fname = './admin_only/ABC_ROM_angler_bot_token.txt'
+    fname = './admin_only/MeaninglessBot_token.txt'
     updater = Updater(token=read_token(fname))
     dispatcher = updater.dispatcher
     # set the time interval to check for updates (900 sec = 15 min)
