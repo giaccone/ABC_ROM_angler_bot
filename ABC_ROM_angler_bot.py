@@ -207,7 +207,7 @@ def restart(bot, update):
 # =========================================
 def main():
     # set TOKEN and initialization
-    fname = './admin_only/MeaninglessBot_token.txt'
+    fname = './admin_only/ABC_ROM_angler_bot_token.txt'
     updater = Updater(token=read_token(fname))
     dispatcher = updater.dispatcher
     # set the time interval to check for updates (900 sec = 15 min)
