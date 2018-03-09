@@ -2,8 +2,7 @@
 #  general python modules
 # ==========================
 import time
-import requests
-from bs4 import BeautifulSoup
+import feedparser
 import os
 import numpy as np
 from functools import wraps
@@ -41,30 +40,38 @@ def read_token(filename):
 # function to get current release released in Kantjer's web site
 # ==============================================================
 def get_current_release():
-    # ABC ROM kantjer web site
-    url = "http://kantjer.com/"
+    # get RSS feed for ABC ROM
+    rssfeed = 'http://kantjer.com/category/abcrom/feed/'
+    feed = feedparser.parse(rssfeed)
 
-    # get content
-    webpage = requests.get(url)
+    # extract info of the latest release
+    # (remove not compatible html syntax)
+    stringHTML = feed['items'][0]['content'][0]['value'].replace('<p>','')
+    stringHTML = stringHTML.replace('</p>','').replace('<br','')
+    stringHTML = stringHTML.replace('&nbsp;','\n')
 
-    # parse content
-    soup = BeautifulSoup(webpage.text, "lxml")
+    # Remove too long Changelog
+    idx = stringHTML.find('<strong>Changelog:</strong>')
+    stringHTML = stringHTML[:idx]
+    # build message for user
+    url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
+                      'collective/rom-builders-collective-t2861778'
+    msg = stringHTML.replace('Download','New ABC build available')
+    msg = msg.replace('.zip</a>','.zip</a>\n')
+    msg += '<strong>Changelog here:</strong>\n<a href="http://kantjer.com/">http://kantjer.com/</a>\n'
+    msg += '<strong>XDA thread here</strong>:\n<a href="{}">Android Builders Collective</a>\n'.format(url_xda)
 
-    # get url
-    index0 = str(soup).find('Download')
-    index1 = str(soup).find('http://kantjer.com/wp-content/uploads', index0)
-    index2 = str(soup).find('.zip',index1) + 4
-    CurrentURL = str(soup)[index1:index2]
+    # get name of the current release
+    idx1 = stringHTML.find('ABC_ROM')
+    idx2 = stringHTML.find('.zip') + len('.zip')
+    CurrentABC = stringHTML[idx1:idx2]
 
-    # get release name
-    CurrentABC = CurrentURL[CurrentURL.find('ABC_ROM'):]
+    return CurrentABC, msg
 
-    return CurrentABC , CurrentURL
-
-# ========================================================
-# assign a global variable inlcuding the latest release
-# ========================================================
-LatestABC, LatestURL = get_current_release()
+# ===============================================
+# assign  the latest release to a global variable
+# ===============================================
+LatestABC, LatestMsg = get_current_release()
 
 
 # ==========================
@@ -86,18 +93,14 @@ def restricted(func):
 # start - welcome message
 # ==========================
 def start(bot, update):
-    url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
-              'collective/rom-builders-collective-t2861778'
-    msg = "*Welcome to ABC-ROM_angler bot*.\n\n"
+
+    msg = "<strong>Welcome to ABC-ROM_angler bot</strong>\n\n"
     msg += "It will notify you when an update is available for angler\n\n"
-    msg += "The current release is:\n"
-    msg += "[" + LatestABC + "]({})\n\n".format(LatestURL)
-    msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n\n'
-    msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
+    msg += LatestMsg.replace('New ABC build available','The current release is')
 
     bot.send_message(chat_id=update.message.chat_id,
                      text=msg,
-                     parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+                     parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
 
     # add user to database for future communications
     current_users = str(update.message.chat_id)
@@ -136,21 +139,13 @@ def check4update(bot, job):
     # global variables
     global LatestABC
     # current release
-    currentABC, currentURL = get_current_release()
+    currentABC, currentMsg = get_current_release()
 
     # check for updates
     if LatestABC != currentABC:
         # update latest release
         LatestABC = currentABC
-
-        # build message for users
-        url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
-                  'collective/rom-builders-collective-t2861778'
-
-        msg = "*New build for ABC-ROM_angler is available:*\n\n"
-        msg += "[" + LatestABC + "]({})\n\n".format(currentURL)
-        msg += 'Changelog here:\n[http://kantjer.com/](http://kantjer.com/)\n'
-        msg += 'XDA thread here:\n[Android Builders Collective]({})\n'.format(url_xda)
+        LatestMsg = currentMsg
 
         # send message to all users (keeping track of the incative ones)
         users = np.loadtxt('./users/users_database.db').reshape(-1,)
@@ -160,8 +155,8 @@ def check4update(bot, job):
             # try to send the message
             try:
                 bot.send_message(chat_id=chat_id,
-                                 text=msg,
-                                 parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+                                 text=currentMsg,
+                                 parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
 
             # if the user closed the bot, cacth exception and update inactive_users
             except telegram.error.TelegramError:
@@ -207,12 +202,12 @@ def restart(bot, update):
 # =========================================
 def main():
     # set TOKEN and initialization
-    fname = './admin_only/ABC_ROM_angler_bot_token.txt'
+    fname = './admin_only/MeaninglessBot_token.txt'
     updater = Updater(token=read_token(fname))
     dispatcher = updater.dispatcher
     # set the time interval to check for updates (900 sec = 15 min)
     job_queue = updater.job_queue
-    job_c4u = job_queue.run_repeating(check4update, interval=900, first=60)
+    job_c4u = job_queue.run_repeating(check4update, interval=10, first=10)
 
     # /start handler
     start_handler = CommandHandler('start', start)
