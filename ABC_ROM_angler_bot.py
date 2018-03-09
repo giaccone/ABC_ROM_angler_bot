@@ -207,7 +207,7 @@ def main():
     dispatcher = updater.dispatcher
     # set the time interval to check for updates (900 sec = 15 min)
     job_queue = updater.job_queue
-    job_c4u = job_queue.run_repeating(check4update, interval=10, first=10)
+    job_c4u = job_queue.run_repeating(check4update, interval=900, first=60)
 
     # /start handler
     start_handler = CommandHandler('start', start)
