@@ -187,6 +187,107 @@ def check4update(bot, job):
         np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
 
 
+# =====================================================
+# notify to alla users the current release
+# =====================================================
+@restricted
+def notify(bot, update):
+    # current release
+    currentABC, currentMsg = get_current_release()
+
+    # send message to all users (keeping track of the incative ones)
+    users = np.loadtxt('./users/users_database.db').reshape(-1,)
+    inactive_users = []
+    for index, single_user in enumerate(users):
+        chat_id = int(single_user)
+        # try to send the message
+        try:
+            bot.send_message(chat_id=chat_id,
+                             text=currentMsg,
+                             parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
+
+        # if the user closed the bot, cacth exception and update inactive_users
+        except telegram.error.TelegramError:
+            inactive_users.append(index)
+
+    # summary
+    N_active = users.size - len(inactive_users)
+    N_inactive = len(inactive_users)
+
+    # send summary to admins
+    msg = '*Summary*:\n'
+    msg += '  \* active users notified: {:d}\n'.format(N_active)
+    msg += '  \* inactive users (removed): {:d}'.format(N_inactive)
+    for single_user in LIST_OF_ADMINS:
+        chat_id = int(single_user)
+        # try to send the message
+        try:
+            bot.send_message(chat_id=chat_id,
+                             text=msg,
+                             parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+        # if the admin closed the bot, cacth exception and do nothing
+        except telegram.error.TelegramError:
+            pass
+
+    # remove inactive_users and update database
+    users = np.delete(users, inactive_users)
+    np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
+
+
+# =====================================================
+# send message to all active users
+# =====================================================
+@restricted
+def send2all(bot, update):
+
+    # get the message to be sent
+    fid = open('./admin_only/message.txt')
+    msg = fid.read()
+    fid.close()
+
+    # send message to all users (keeping track of the incative ones)
+    users = np.loadtxt('./users/users_database.db').reshape(-1,)
+    inactive_users = []
+
+    for index, single_user in enumerate(users):
+        chat_id = int(single_user)
+        # try to send the message
+        try:
+            bot.send_message(chat_id=chat_id,
+                             text=msg,
+                             parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+        # if the user closed the bot, cacth exception and update inactive_users
+        except telegram.error.TelegramError:
+            inactive_users.append(index)
+
+    # summary
+    N_active = users.size - len(inactive_users)
+    N_inactive = len(inactive_users)
+
+    # send summary to admins
+    msg = '*Summary*:\n'
+    msg += '  \* active users notified: {:d}\n'.format(N_active)
+    msg += '  \* inactive users (removed): {:d}'.format(N_inactive)
+    for single_user in LIST_OF_ADMINS:
+        chat_id = int(single_user)
+        # try to send the message
+        try:
+            bot.send_message(chat_id=chat_id,
+                             text=msg,
+                             parse_mode=telegram.ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+        # if the admin closed the bot, cacth exception and do nothing
+        except telegram.error.TelegramError:
+            pass
+
+    # remove inactive_users and update database
+    users = np.delete(users, inactive_users)
+    np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
+
+
+
 # =========================================
 # restart - restart the BOT
 # =========================================
@@ -216,6 +317,14 @@ def main():
     # /help handler
     help_handler = CommandHandler('help', help)
     dispatcher.add_handler(help_handler)
+
+    # /notify - send message to all users
+    notify_handler = CommandHandler('notify', notify)
+    dispatcher.add_handler(notify_handler)
+
+    # /send2all - send message to all users
+    send2all_handler = CommandHandler('send2all', send2all)
+    dispatcher.add_handler(send2all_handler)
 
     # /r - restart the bot
     dispatcher.add_handler(CommandHandler('r', restart))
