@@ -1,16 +1,17 @@
 # ==========================
 #  general python modules
 # ==========================
-import time
 import feedparser
 import os
 import numpy as np
 from functools import wraps
+from threading import Thread
+import sys
 
 # ==========================
 # python-temegam-bot modules
 # ==========================
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler
 import telegram as telegram
 
 # ===============================
@@ -290,16 +291,6 @@ def send2all(bot, update):
 
 
 # =========================================
-# restart - restart the BOT
-# =========================================
-@restricted
-def restart(bot, update):
-    bot.send_message(update.message.chat_id, "Bot is restarting...")
-    time.sleep(0.2)
-    os.execl(sys.executable, sys.executable, *sys.argv)
-
-
-# =========================================
 # bot - main
 # =========================================
 def main():
@@ -310,6 +301,20 @@ def main():
     # set the time interval to check for updates (900 sec = 15 min)
     job_queue = updater.job_queue
     job_c4u = job_queue.run_repeating(check4update, interval=900, first=60)
+
+    # code to restart the bot
+    def stop_and_restart():
+        """Gracefully stop the Updater and replace the current process with a new one"""
+        updater.stop()
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
+    @restricted
+    def restart(bot, update):
+        update.message.reply_text('Bot is restarting...')
+        Thread(target=stop_and_restart).start()
+
+    # /r - restart the bot (handler)
+    dispatcher.add_handler(CommandHandler('r', restart))
 
     # /start handler
     start_handler = CommandHandler('start', start)
@@ -326,9 +331,6 @@ def main():
     # /send2all - send message to all users
     send2all_handler = CommandHandler('send2all', send2all)
     dispatcher.add_handler(send2all_handler)
-
-    # /r - restart the bot
-    dispatcher.add_handler(CommandHandler('r', restart))
 
     # start the BOT
     updater.start_polling()
