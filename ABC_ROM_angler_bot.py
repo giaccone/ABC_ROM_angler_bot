@@ -26,6 +26,7 @@ fid = open('./admin_only/admin_list.txt', 'r')
 LIST_OF_ADMINS = [int(adm) for adm in fid.readline().split()]
 fid.close()
 
+
 # ==========================
 # The following function reads the TOKEN from a file.
 # This file is not incuded in the github-repo for obvious reasons
@@ -51,7 +52,7 @@ def get_current_release():
     stringHTML = stringHTML.replace('&nbsp;','\n')
 
     # Remove too long Changelog
-    idx = stringHTML.find('<strong>Changelog:</strong>')
+    idx = stringHTML.lower().find('<strong>changelog')
     stringHTML = stringHTML[:idx]
     # build message for user
     url_xda = 'https://forum.xda-developers.com/custom-roms/android-builders-' \
@@ -67,6 +68,7 @@ def get_current_release():
     CurrentABC = stringHTML[idx1:idx2]
 
     return CurrentABC, msg
+
 
 # ===============================================
 # assign  the latest release to a global variable
@@ -188,7 +190,7 @@ def check4update(bot, job):
 
 
 # =====================================================
-# notify to alla users the current release
+# notify to all users the current release
 # =====================================================
 @restricted
 def notify(bot, update):
@@ -285,7 +287,6 @@ def send2all(bot, update):
     # remove inactive_users and update database
     users = np.delete(users, inactive_users)
     np.savetxt('./users/users_database.db', users.astype(int), fmt="%s")
-
 
 
 # =========================================
