@@ -141,6 +141,7 @@ def help(bot, update):
 def check4update(bot, job):
     # global variables
     global LatestABC
+    global LatestMsg
     # current release
     currentABC, currentMsg = get_current_release()
 
